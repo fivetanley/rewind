@@ -1,0 +1,37 @@
+(function(){
+  'use strict';
+
+  function fixture(){
+    this['<%= @method %>'](url, function(request){
+      <% if @body.present? %>
+      var data = '
+      <% if @response.content_type.to_s =~ /json/ %>
+<%= pretty_print_json JSON.parse(@body), 8 %>
+      <% else %>
+    <%= @body %>
+      <% end %>
+      ';
+      <% else %>
+      var data = '';
+      <% end %>
+      var url  = '<%= @path %>';
+
+      var headers =
+<%= pretty_print_json(@response.headers, 8) %>
+      ;
+
+      var status = <%= @status %>;
+
+      return [status, headers, data];
+    });
+  }
+  <% if @body.present? && @response.content_type.to_s =~ /json/ %>
+  fixture.data =
+<%= pretty_print_json JSON.parse(@body), 4 %>
+  ;
+  <% else %>
+    fixture.data = '<%= @body.present? ? @body.to_json : '' %>';
+  <% end %>
+  window.PRETENDER_FIXTURES = window.PRETENDER_FIXTURES || {};
+  window.PRETENDER_FIXTURES['<%= @name %>'] = fixture;
+})();
