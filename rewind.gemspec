@@ -7,11 +7,11 @@ require "rewind/version"
 Gem::Specification.new do |s|
   s.name        = "rewind"
   s.version     = Rewind::VERSION
-  s.authors     = ["TODO: Your name"]
-  s.email       = ["TODO: Your email"]
-  s.homepage    = "TODO"
-  s.summary     = "TODO: Summary of Rewind."
-  s.description = "TODO: Description of Rewind."
+  s.authors     = ["Stanley Stuart"]
+  s.email       = ["stanley+github@stan.li"]
+  s.homepage    = ""
+  s.summary     = "Record your rails requests and reuse them in your JavaScript tests."
+  s.description = "Record your rails requests and reuse them in your JavaScript tests."
   s.license     = "MIT"
 
   s.files = Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.rdoc"]
