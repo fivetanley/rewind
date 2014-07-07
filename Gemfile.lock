@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     rewind (0.0.1)
-      rails (~> 4.1.1)
+      rails (>= 3.2)
 
 GEM
   remote: https://rubygems.org/
@@ -54,7 +54,7 @@ GEM
     mime-types (1.25.1)
     minitest (5.3.4)
     multi_json (1.10.1)
-    polyglot (0.3.4)
+    polyglot (0.3.5)
     pry (0.9.12.6)
       coderay (~> 1.0)
       method_source (~> 0.8)

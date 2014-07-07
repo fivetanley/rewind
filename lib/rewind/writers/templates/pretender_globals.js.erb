@@ -2,22 +2,23 @@
   'use strict';
 
   function fixture(){
+    var url = '<%= @path %>';
     this['<%= @method %>'](url, function(request){
       <% if @body.present? %>
-      var data = '
       <% if @response.content_type.to_s =~ /json/ %>
-<%= pretty_print_json JSON.parse(@body), 8 %>
+      var data = function(){
+        var __PRETENDER_FIXTURE_DATA__ =
+<%= pretty_print_json ActiveSupport::JSON.decode(@body), 10 %>
       <% else %>
-    <%= @body %>
+      var data = '<%= @body %>';
       <% end %>
-      ';
+      }.toString().replace(/var __PRETENDER_FIXTURE_DATA__ =/, '');
       <% else %>
       var data = '';
       <% end %>
-      var url  = '<%= @path %>';
 
       var headers =
-<%= pretty_print_json(@response.headers, 8) %>
+<%= pretty_print_json(@response.headers.to_hash, 8) %>
       ;
 
       var status = <%= @status %>;
@@ -27,11 +28,27 @@
   }
   <% if @body.present? && @response.content_type.to_s =~ /json/ %>
   fixture.data =
-<%= pretty_print_json JSON.parse(@body), 4 %>
+<%= pretty_print_json ActiveSupport::JSON.decode(@body), 4 %>
   ;
   <% else %>
     fixture.data = '<%= @body.present? ? @body.to_json : '' %>';
   <% end %>
+
+
+  function createPretender(){
+    return new Pretender(function(){
+      for (var fixture in window.PRETENDER_FIXTURES.fixtures) {
+        if (!window.PRETENDER_FIXTURES.hasOwnProperty(fixture)) continue;
+        PRETENDER_FIXTURES[fixture].call(this);
+      }
+    });
+  }
+
   window.PRETENDER_FIXTURES = window.PRETENDER_FIXTURES || {};
-  window.PRETENDER_FIXTURES['<%= @name %>'] = fixture;
+  if (!window.PRETENDER_FIXTURES.fixtures) {
+    window.PRETENDER_FIXTURES.fixtures = {};
+  }
+  var fixtures = window.PRETENDER_FIXTURES.fixtures;
+  fixtures['<%= @name %>'] = fixture;
+  window.PRETENDER_FIXTURES.createPretender = window.PRETENDER_FIXTURES.createPretender || createPretender;
 })();

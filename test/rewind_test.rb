@@ -7,8 +7,10 @@ class QuizTest < Rewind::IntegrationTest
   folder 'quizzes'
 
   setup do
-    self.class.fixture 'hi' do
-      get '/', {}, { 'Accept' => 'application/json' }
+    Rewind::Folder.new('quizzes') do |f|
+      f.fixture('hi') do
+        get '/', {}, { 'Accept' => 'application/json' }
+      end
     end
   end
 

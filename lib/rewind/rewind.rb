@@ -1,6 +1,7 @@
 require 'fileutils'
 
 module Rewind
+
 	class Fixture
     attr_reader :name, :options
     def initialize(name, options={})
@@ -43,7 +44,7 @@ module Rewind
 
     def pretty_print_json(json_obj, spaces=4)
       if json_obj
-        json = JSON.pretty_generate json_obj
+        json = JSON.pretty_generate(json_obj)
         json.split("\n").map { |s| (" " * spaces) + s }.join("\n")
       else
         ''
@@ -55,17 +56,20 @@ module Rewind
   class Folder
 
     attr_reader :name, :tapes
-    def initialize(name, options={})
+    def initialize(name, options={}, &block)
       @name = name
       @tapes = []
       @options = options
-      config_file = YAML.load(File.read(Rails.root.join('config', 'rewind.yml')))
-      root = config_file['root']
-      @root = Rails.root.join(*root.split('/') + [name])
+      @root = Rewind.folder_root + name
+      yield self if block_given?
     end
 
     def fixture(name, options={}, &block)
-      tape = Fixture.new(self.name + '/' + name, options).run(&block)
+      tape = nil
+      ActiveRecord::Base.transaction do
+        tape = Fixture.new(self.name + '/' + name, options).run(&block)
+        raise ActiveRecord::Rollback
+      end
       write! name, tape 
       @tapes << tape 
     end
@@ -77,44 +81,45 @@ module Rewind
 
     def write!(file_name, fixture)
       FileUtils.mkdir_p @root
-      File.open(File.expand_path("#{@root}/#{file_name}.js"), 'w+') do |file|
+      path = File.expand_path("#{@root}/#{file_name}.js")
+      File.open(path, 'w+') do |file|
         file.write Writer::Pretender.new(fixture).render
-      end
-    end
-
-    def run(&block)
-      def fixture(name, options={}, &block)
-       @tapes << Fixture.new(name, options, &block)
-     end
-     block.call
-   end
-
- end
-
- class IntegrationTest < ActionDispatch::IntegrationTest
-  include ActiveSupport::Testing::SetupAndTeardown
-
-  class << self
-    def folder_root
-      @folder_root || ''
-    end
-    attr_accessor :folder_root, :_folder
-
-    def folder(name, options={}, &block)
-      self.folder_root = name
-      self._folder = Folder.new(self.folder_root)  
-    end
-
-    def fixture(name, options={}, &block)
-      test name do
-        self.class._folder.fixture(name, options) do
-          instance_exec &block
-        end
+        puts "[rewind] Wrote #{path}"
       end
     end
   end
 
-end
+  class IntegrationTest < ActionDispatch::IntegrationTest
+    include ActiveSupport::Testing::SetupAndTeardown
+
+    class << self
+      attr_accessor :folder_root, :_folder
+
+      def folder_root
+        @folder_root || ''
+      end
+
+      def folder(name, options={}, &block)
+        self.folder_root = name
+        self._folder = Folder.new(self.folder_root)  
+      end
+
+      def fixture(name, options={}, &block)
+        test "_fixture_name" do
+          self.class._folder.fixture(name, options) do
+            instance_exec &block
+          end
+        end
+      end
+    end
+
+    def fixture(name, options={}, &block)
+      self.class._folder.fixture(name, options) do
+        instance_exec(&block)
+      end
+    end
+
+  end
 
   module Writer
     class Pretender
